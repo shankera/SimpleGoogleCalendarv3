@@ -4,7 +4,6 @@ using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-﻿using CS498.Lib;
 ﻿using Google.Apis.Auth.OAuth2;
 ﻿using Google.Apis.Calendar.v3;
 using Google.Apis.Calendar.v3.Data;
@@ -15,26 +14,20 @@ namespace SimpleGoogleCalendarv3
     public class SimpleGoogleCalendar
     {
 
-        private static SimpleGoogleCalendar _instance;
         private static CalendarService _service;
 
-        private SimpleGoogleCalendar()
+        public SimpleGoogleCalendar(string clientId, string clientSecret)
         {
-            Authorize().Wait();
+            AuthorizeAsync(clientId, clientSecret).Wait();
         }
 
-        public static SimpleGoogleCalendar Instance
-        {
-            get { return _instance ?? (_instance = new SimpleGoogleCalendar()); }
-        }
-
-        private static async Task Authorize()
+        private static async Task AuthorizeAsync(string clientId, string clientSecret)
         {
             var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
                 new ClientSecrets
                 {
-                    ClientId = PrivateConsts.ClientId,
-                    ClientSecret = PrivateConsts.ClientSecrets
+                    ClientId = clientId,
+                    ClientSecret = clientSecret
                 },
                 new[] {CalendarService.Scope.Calendar},
                 "user",
@@ -61,7 +54,7 @@ namespace SimpleGoogleCalendarv3
             Writer
         }
 
-        public async Task<IDictionary<string, string>> GetCalendarIds(CalendarAccess accessLevel)
+        public async Task<IDictionary<string, string>> GetCalendarIdsAsync(CalendarAccess accessLevel)
         {
             var calendarIds = new Dictionary<string, string>();
             var req = await _service.CalendarList.List().ExecuteAsync();
@@ -78,7 +71,7 @@ namespace SimpleGoogleCalendarv3
             return calendarIds;
         }
 
-        public async Task<IEnumerable<Event>> GetEvents(string calendarId, DateTime startDate, DateTime endDate, bool singleEvents)
+        public async Task<IEnumerable<Event>> GetEventsAsync(string calendarId, DateTime startDate, DateTime endDate, bool singleEvents)
         {
             var listRequest = _service.Events.List(calendarId);
             listRequest.TimeMin = startDate;
@@ -89,14 +82,24 @@ namespace SimpleGoogleCalendarv3
             return request.Items.ToList();
         }
 
-        public async Task AddEvent(string calendarId, Event gEvent)
+        public async Task AddEventAsync(string calendarId, Event gEvent)
         {
             await _service.Events.Insert(gEvent, calendarId).ExecuteAsync();
         }
 
-        public async Task DeleteEvent(string calendarId, string eventId)
+        public async Task DeleteEventAsync(string calendarId, string eventId)
         {
             await _service.Events.Delete(calendarId, eventId).ExecuteAsync();
+        }
+
+        public async Task<Calendar> GetCalendarAsync(string calendarId)
+        {
+            return await _service.Calendars.Get(calendarId).ExecuteAsync();
+        }
+
+        public async Task DeleteCalendarAsync(string calendarId)
+        {
+            await _service.Calendars.Delete(calendarId).ExecuteAsync();
         }
     }
 
