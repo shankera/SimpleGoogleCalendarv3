@@ -13,7 +13,9 @@ namespace SimpleGoogleCalendarv3
 {
     public class SimpleGoogleCalendar
     {
-
+        public const string AccessLevelOwner = "owner";
+        public const string AccessLevelReader = "reader";
+        public const string AccessLevelWriter = "writer";
         private static CalendarService _service;
 
         public SimpleGoogleCalendar(string clientId, string clientSecret)
@@ -44,21 +46,11 @@ namespace SimpleGoogleCalendarv3
 
         public const string DefaultCalendarId = "primary";
 
-        public enum CalendarAccess
-        {
-            [Description("Reader")]
-            Reader,
-            [Description("Owner")]
-            Owner,
-            [Description("Writer")]
-            Writer
-        }
-
-        public async Task<IDictionary<string, string>> GetCalendarIdsAsync(CalendarAccess accessLevel)
+        public async Task<IDictionary<string, string>> GetCalendarIdsAsync(string accessLevel)
         {
             var calendarIds = new Dictionary<string, string>();
             var req = await _service.CalendarList.List().ExecuteAsync();
-            foreach (var calendarListEntry in req.Items.Where(x => x.AccessRole.Equals(accessLevel.ToString())))
+            foreach (var calendarListEntry in req.Items.Where(x => x.AccessRole.Equals(accessLevel)))
             {
                 var calendarId = calendarListEntry.Id;
                 var calendarSummary = calendarListEntry.Summary;
