@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -50,6 +49,8 @@ namespace SimpleGoogleCalendarv3
 
         }
 
+        public const string DefaultCalendarId = "primary";
+
         public enum CalendarAccess
         {
             [Description("Reader")]
@@ -77,7 +78,26 @@ namespace SimpleGoogleCalendarv3
             return calendarIds;
         }
 
+        public async Task<IEnumerable<Event>> GetEvents(string calendarId, DateTime startDate, DateTime endDate, bool singleEvents)
+        {
+            var listRequest = _service.Events.List(calendarId);
+            listRequest.TimeMin = startDate;
+            listRequest.TimeMax = endDate;
+            listRequest.SingleEvents = singleEvents;
+            var request = await listRequest.ExecuteAsync();
 
+            return request.Items.ToList();
+        }
+
+        public async Task AddEvent(string calendarId, Event gEvent)
+        {
+            await _service.Events.Insert(gEvent, calendarId).ExecuteAsync();
+        }
+
+        public async Task DeleteEvent(string calendarId, string eventId)
+        {
+            await _service.Events.Delete(calendarId, eventId).ExecuteAsync();
+        }
     }
 
 }

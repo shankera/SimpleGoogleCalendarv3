@@ -97,7 +97,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="SimpleCalendar.cs" />
+    <Compile Include="SimpleEvent.cs" />
+    <Compile Include="SimpleGoogleCalendar.cs" />
     <Compile Include="PrivateConsts.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
