@@ -1,50 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
-﻿using Google.Apis.Auth.OAuth2;
 ﻿using Google.Apis.Calendar.v3;
 using Google.Apis.Calendar.v3.Data;
-using Google.Apis.Services;
-using Google.Apis.Util.Store;
 namespace SimpleGoogleCalendarv3
 {
-    public class SimpleGoogleCalendar
+    public class SimpleGoogleCalendar : ISimpleCalendar
     {
-        public const string AccessLevelOwner = "owner";
-        public const string AccessLevelReader = "reader";
-        public const string AccessLevelWriter = "writer";
+        public const string DefaultCalendarId = "primary";
+
         private static CalendarService _service;
 
-        public SimpleGoogleCalendar(string clientId, string clientSecret)
+        public SimpleGoogleCalendar(CalendarService service)
         {
-            AuthorizeAsync(clientId, clientSecret).Wait();
+            _service = service;
         }
-
-        private static async Task AuthorizeAsync(string clientId, string clientSecret)
-        {
-            var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-                new ClientSecrets
-                {
-                    ClientId = clientId,
-                    ClientSecret = clientSecret
-                },
-                new[] {CalendarService.Scope.Calendar},
-                "user",
-                CancellationToken.None,
-                new FileDataStore("Calendar.Auth.Store"));
-
-            _service = new CalendarService(new BaseClientService.Initializer
-            {
-                HttpClientInitializer = credential,
-                ApplicationName = "Calendar API Sample"
-            });
-
-        }
-
-        public const string DefaultCalendarId = "primary";
 
         public async Task<IDictionary<string, string>> GetCalendarIdsAsync(string accessLevel)
         {
