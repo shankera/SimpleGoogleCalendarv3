@@ -64,6 +64,7 @@ namespace SimpleGoogleCalendarv3
         {
             if (calendarId == null) throw new ArgumentNullException("calendarId", "calendarId can not be null");
             if (gEvent == null) throw new ArgumentNullException("gEvent", "gEvent can not be null");
+
             await _service.AddEvent(calendarId, gEvent);
         }
 

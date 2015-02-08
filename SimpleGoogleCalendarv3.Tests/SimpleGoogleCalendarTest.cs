@@ -1,12 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Google.Apis.Calendar.v3.Data;
-using Ionic.Zlib;
-using Microsoft.Runtime.CompilerServices;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Ploeh.AutoFixture;
@@ -21,7 +17,9 @@ namespace SimpleGoogleCalendarv3.Tests
         private static List<CalendarListEntry> _writerList;
         private static List<CalendarListEntry> _readerList;
         private static List<Calendar> _calendars;
-        private static List<string> _ids; 
+        private static List<string> _validIdsForGettingCalendar;
+        private static List<string> _validCalendarIdsForAddingEvent;
+        private static List<Event> _events; 
         private static SimpleGoogleCalendar _simpleCalendar;
 
         private static string _testId;
@@ -32,7 +30,6 @@ namespace SimpleGoogleCalendarv3.Tests
             var fixture = new Fixture();
 
             _mock = new Mock<ICalendarServiceFacade>();
-            _calendars = fixture.CreateMany<Calendar>().ToList();
 
             _ownerList = fixture.CreateMany<CalendarListEntry>().ToList();
             _writerList = fixture.CreateMany<CalendarListEntry>().ToList();
@@ -44,12 +41,62 @@ namespace SimpleGoogleCalendarv3.Tests
             var entries = _ownerList.Concat(_writerList).Concat(_readerList).ToList();
             _mock.Setup(x => x.GetCalendarListItemsExecuteAsyncItems()).ReturnsAsync(entries);
 
-            _ids = _calendars.Select(x => x.Id).ToList();
-            _testId = _ids[new Random().Next(_ownerList.Count)];
-            _mock.Setup(x => x.GetCalendar(It.IsIn<string>(_ids)))
+            _calendars = fixture.CreateMany<Calendar>().ToList();
+            _validIdsForGettingCalendar = _calendars.Select(x => x.Id).ToList();
+            _testId = _validIdsForGettingCalendar[new Random().Next(_ownerList.Count)];
+            _mock.Setup(x => x.GetCalendar(It.IsIn<string>(_validIdsForGettingCalendar)))
                 .ReturnsAsync(_calendars.FirstOrDefault(y => y.Id.Equals(_testId)));
-            
+            _mock.Setup(x => x.GetCalendar(It.IsNotIn<string>(_validIdsForGettingCalendar)))
+                .Throws(new Google.GoogleApiException("Google.Apis.Requests.RequestError", "Google.Apis.Requests.RequestError"));
+
+            _validCalendarIdsForAddingEvent = fixture.CreateMany<string>().ToList();
+            _events = fixture.CreateMany<Event>().ToList();
+            _mock.Setup(x => x.AddEvent(It.IsIn<string>(_validCalendarIdsForAddingEvent), It.IsAny<Event>()))
+                .Returns(Task.FromResult(true))
+                .Callback((string id, Event gEvent) => _events.Add(gEvent));
+            _mock.Setup(x => x.AddEvent(It.IsNotIn<string>(_validCalendarIdsForAddingEvent), It.IsAny<Event>()))
+                .Throws(new Google.GoogleApiException("Google.Apis.Requests.RequestError", "Google.Apis.Requests.RequestError"));
+
             _simpleCalendar = new SimpleGoogleCalendar(_mock.Object);
+        }
+
+        [TestMethod]
+        public async Task AddEvent()
+        {
+            var countBefore = _events.Count;
+            var newEvent = new Fixture().Create<Event>();
+            var calendarId = _validCalendarIdsForAddingEvent[new Random().Next(_validCalendarIdsForAddingEvent.Count)];
+            await _simpleCalendar.AddEventAsync(calendarId, newEvent);
+            var countAfter = _events.Count;
+            Assert.AreEqual(countBefore + 1, countAfter);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public async Task AddEventNullEvent()
+        {
+            var calendarId = _validCalendarIdsForAddingEvent[new Random().Next(_validCalendarIdsForAddingEvent.Count)];
+            await _simpleCalendar.AddEventAsync(calendarId, null);
+            Assert.Fail("Null Event should have thrown exception");
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public async Task AddEventNullId()
+        {
+            var newEvent = new Fixture().Create<Event>();
+            await _simpleCalendar.AddEventAsync(null, newEvent);
+            Assert.Fail("Null Id should have thrown exception");
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(Google.GoogleApiException))]
+        public async Task AddEventInvalidId()
+        {
+            var calendarId = new Fixture().Create<string>();
+            var newEvent = new Fixture().Create<Event>();
+            await _simpleCalendar.AddEventAsync(calendarId, newEvent);
+            Assert.Fail("Exception should have been thrown");
         }
 
         [TestMethod]
@@ -97,17 +144,19 @@ namespace SimpleGoogleCalendarv3.Tests
         }
        
         [TestMethod]
+        [ExpectedException(typeof(Google.GoogleApiException))]
         public async Task GetCalendarEmptyId()
         {
-            var calendar = await _simpleCalendar.GetCalendarAsync("");
-            Assert.IsNull(calendar);
+            await _simpleCalendar.GetCalendarAsync("");
+            Assert.Fail("Invalid Id - GoogleApiException should have been thrown");
         }
-
+        
         [TestMethod]
+        [ExpectedException(typeof(Google.GoogleApiException))]
         public async Task GetCalendarInvalidId()
         {
-            var calendar = await _simpleCalendar.GetCalendarAsync("definitelynotanId");
-            Assert.IsNull(calendar);
+            await _simpleCalendar.GetCalendarAsync("definitelynotanId");
+            Assert.Fail("Invalid Id - GoogleApiException should have been thrown");
         }
 
         [TestMethod]
