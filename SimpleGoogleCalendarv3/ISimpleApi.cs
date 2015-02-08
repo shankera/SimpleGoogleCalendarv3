@@ -5,6 +5,6 @@ namespace SimpleGoogleCalendarv3
 {
     public interface ISimpleApi
     {
-        Task<BaseClientService> CreateServiceAsync(string clientId, string clientSecret, string applicationName);
+        Task<BaseClientService> CreateServiceAsync();
     }
 }

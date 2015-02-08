@@ -7,15 +7,24 @@ using Google.Apis.Util.Store;
 
 namespace SimpleGoogleCalendarv3
 {
-    class SimpleCalendarApi : ISimpleApi
+    public class SimpleCalendarApi : ISimpleApi
     {
-        public async Task<BaseClientService> CreateServiceAsync(string clientId, string clientSecret, string applicationName)
+        private readonly string _clientId;
+        private readonly string _clientSecret;
+        private readonly string _applicationName;
+        public SimpleCalendarApi(string clientId, string clientSecret, string applicationName)
+        {
+            _clientId = clientId;
+            _clientSecret = clientSecret;
+            _applicationName = applicationName;
+        }
+        public async Task<BaseClientService> CreateServiceAsync()
         {
             var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
                 new ClientSecrets
                 {
-                    ClientId = clientId,
-                    ClientSecret = clientSecret
+                    ClientId = _clientId,
+                    ClientSecret = _clientSecret
                 },
                 new[] { CalendarService.Scope.Calendar },
                 "user",
@@ -25,7 +34,7 @@ namespace SimpleGoogleCalendarv3
             return new CalendarService(new BaseClientService.Initializer
             {
                 HttpClientInitializer = credential,
-                ApplicationName = applicationName
+                ApplicationName = _applicationName
             });
         }
     }
