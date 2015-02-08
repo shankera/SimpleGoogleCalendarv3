@@ -22,9 +22,9 @@ namespace SimpleGoogleCalendarv3.Tests
         private static List<CalendarListEntry> _readerList;
         private static List<Calendar> _calendars;
         private static List<string> _ids; 
+        private static SimpleGoogleCalendar _simpleCalendar;
 
         private static string _testId;
-        private static Calendar _testEntry;
 
         [ClassInitialize]
         public static void Initialize(TestContext s)
@@ -32,7 +32,7 @@ namespace SimpleGoogleCalendarv3.Tests
             var fixture = new Fixture();
 
             _mock = new Mock<ICalendarServiceFacade>();
-            _calendars = new List<Calendar>();
+            _calendars = fixture.CreateMany<Calendar>().ToList();
 
             _ownerList = fixture.CreateMany<CalendarListEntry>().ToList();
             _writerList = fixture.CreateMany<CalendarListEntry>().ToList();
@@ -42,32 +42,20 @@ namespace SimpleGoogleCalendarv3.Tests
             _readerList.ForEach(x => x.AccessRole = CalendarAccess.Reader.ToString().ToLower());
 
             var entries = _ownerList.Concat(_writerList).Concat(_readerList).ToList();
-            foreach (var entry in entries.Select(calendarListEntry => new Calendar
-            {
-                Id = calendarListEntry.Id,
-                Summary = calendarListEntry.Summary,
-                Description = calendarListEntry.Description,
-                Location = calendarListEntry.Location,
-                ETag = calendarListEntry.ETag,
-                Kind = calendarListEntry.Kind,
-                TimeZone = calendarListEntry.TimeZone,
-            }))
-            {
-                _calendars.Add(entry);
-            }
+            _mock.Setup(x => x.GetCalendarListItemsExecuteAsyncItems()).ReturnsAsync(entries);
 
-            _ids = entries.Select(x => x.Id).ToList();
+            _ids = _calendars.Select(x => x.Id).ToList();
             _testId = _ids[new Random().Next(_ownerList.Count)];
             _mock.Setup(x => x.GetCalendar(It.IsIn<string>(_ids)))
-                 .ReturnsAsync(_calendars.FirstOrDefault(y => y.Id.Equals(_testId)));
-            _mock.Setup(x => x.GetCalendarListItemsExecuteAsyncItems()).ReturnsAsync(entries);
+                .ReturnsAsync(_calendars.FirstOrDefault(y => y.Id.Equals(_testId)));
+            
+            _simpleCalendar = new SimpleGoogleCalendar(_mock.Object);
         }
 
         [TestMethod]
         public async Task GetCalendarIdsOwner()
         {
-            var calendar = new SimpleGoogleCalendar(_mock.Object);
-            var ids = await calendar.GetCalendarIdsAsync(CalendarAccess.Owner);
+            var ids = await _simpleCalendar.GetCalendarIdsAsync(CalendarAccess.Owner);
             Assert.AreEqual(_ownerList.Count, ids.Count);
             foreach (var calendarListEntry in _ownerList)
             {
@@ -79,8 +67,7 @@ namespace SimpleGoogleCalendarv3.Tests
         [TestMethod]
         public async Task GetCalendarIdsReader()
         {
-            var calendar = new SimpleGoogleCalendar(_mock.Object);
-            var ids = await calendar.GetCalendarIdsAsync(CalendarAccess.Reader);
+            var ids = await _simpleCalendar.GetCalendarIdsAsync(CalendarAccess.Reader);
             Assert.AreEqual(_readerList.Count, ids.Count);
             foreach (var calendarListEntry in _readerList)
             {
@@ -92,8 +79,7 @@ namespace SimpleGoogleCalendarv3.Tests
         [TestMethod]
         public async Task GetCalendarIdsWriter()
         {
-            var calendar = new SimpleGoogleCalendar(_mock.Object);
-            var ids = await calendar.GetCalendarIdsAsync(CalendarAccess.Writer);
+            var ids = await _simpleCalendar.GetCalendarIdsAsync(CalendarAccess.Writer);
             Assert.AreEqual(_writerList.Count, ids.Count);
             foreach (var calendarListEntry in _writerList)
             {
@@ -101,29 +87,26 @@ namespace SimpleGoogleCalendarv3.Tests
                 Assert.IsTrue(ids[calendarListEntry.Id].Equals(calendarListEntry.Summary));
             }
         }
+
         [TestMethod]
         public async Task GetCalendar()
         {
-            var simpleCalendar = new SimpleGoogleCalendar(_mock.Object);
-            var calendar = await simpleCalendar.GetCalendarAsync(_testId);
+            var calendar = await _simpleCalendar.GetCalendarAsync(_testId);
             Assert.IsNotNull(calendar);
             Assert.AreEqual(_testId, calendar.Id);
         }
-
-        
+       
         [TestMethod]
         public async Task GetCalendarEmptyId()
         {
-            var simpleCalendar = new SimpleGoogleCalendar(_mock.Object);
-            var calendar = await simpleCalendar.GetCalendarAsync("");
+            var calendar = await _simpleCalendar.GetCalendarAsync("");
             Assert.IsNull(calendar);
         }
 
         [TestMethod]
         public async Task GetCalendarInvalidId()
         {
-            var simpleCalendar = new SimpleGoogleCalendar(_mock.Object);
-            var calendar = await simpleCalendar.GetCalendarAsync("definitelynotanId");
+            var calendar = await _simpleCalendar.GetCalendarAsync("definitelynotanId");
             Assert.IsNull(calendar);
         }
 
@@ -131,8 +114,7 @@ namespace SimpleGoogleCalendarv3.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public async Task GetCalendarNull()
         {
-            var simpleCalendar = new SimpleGoogleCalendar(_mock.Object);
-            await simpleCalendar.GetCalendarAsync(null);
+            await _simpleCalendar.GetCalendarAsync(null);
             Assert.Fail("Exception was not thrown for null parameter.");
         }
     }
