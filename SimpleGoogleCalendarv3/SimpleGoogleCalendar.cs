@@ -62,21 +62,27 @@ namespace SimpleGoogleCalendarv3
 
         public async Task AddEventAsync(string calendarId, Event gEvent)
         {
+            if (calendarId == null) throw new ArgumentNullException("calendarId", "calendarId can not be null");
+            if (gEvent == null) throw new ArgumentNullException("gEvent", "gEvent can not be null");
             await _service.AddEvent(calendarId, gEvent);
         }
 
         public async Task DeleteEventAsync(string calendarId, string eventId)
         {
+            if (calendarId == null) throw new ArgumentNullException("calendarId", "calendarId can not be null");
+            if (eventId == null) throw new ArgumentNullException("eventId", "eventId can not be null");
             await _service.DeleteEvent(calendarId, eventId);
         }
 
         public async Task<Calendar> GetCalendarAsync(string calendarId)
         {
+            if (calendarId == null) throw new ArgumentNullException("calendarId", "calendarId can not be null");
             return await _service.GetCalendar(calendarId);
         }
 
         public async Task DeleteCalendarAsync(string calendarId)
         {
+            if (calendarId == null) throw new ArgumentNullException("calendarId", "calendarId can not be null");
             await _service.DeleteCalendar(calendarId);
         }
     }
