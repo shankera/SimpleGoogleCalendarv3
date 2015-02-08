@@ -21,36 +21,19 @@ namespace SimpleGoogleCalendarv3.Tests
         public static void Initialize(TestContext s)
         {
             _mock = new Mock<ICalendarServiceFacade>();
-            _ownerList = new List<CalendarListEntry>();
-            _writerList = new List<CalendarListEntry>();
-            _readerList = new List<CalendarListEntry>();
-
             var fixture = new Fixture();
-            var entries = fixture.CreateMany<CalendarListEntry>(60);
-            var index = 0;
-            var calendarListEntries = entries as IList<CalendarListEntry> ?? entries.ToList();
-            foreach (var calendarListEntry in calendarListEntries)
-            {
-                calendarListEntry.Id = fixture.Create<string>();
-                calendarListEntry.Summary = fixture.Create<string>();
-                if (index%4 == 0)
-                {
-                    calendarListEntry.AccessRole = CalendarAccess.Owner;
-                    _ownerList.Add(calendarListEntry);
-                }
-                else if (index%3 == 0)
-                {
-                    calendarListEntry.AccessRole = CalendarAccess.Reader;
-                    _readerList.Add(calendarListEntry);
-                }
-                else
-                {
-                    calendarListEntry.AccessRole = CalendarAccess.Writer;
-                    _writerList.Add(calendarListEntry);
-                }
-                index++;
-            }
-            _mock.Setup(x => x.GetCalendarListItemsExecuteAsyncItems()).ReturnsAsync(calendarListEntries);
+
+            _ownerList = fixture.CreateMany<CalendarListEntry>().ToList();
+            _writerList = fixture.CreateMany<CalendarListEntry>().ToList();
+            _readerList = fixture.CreateMany<CalendarListEntry>().ToList();
+
+            _ownerList.ForEach(x => x.AccessRole = CalendarAccess.Owner.ToString().ToLower());
+            _writerList.ForEach(x => x.AccessRole = CalendarAccess.Writer.ToString().ToLower());
+            _readerList.ForEach(x => x.AccessRole = CalendarAccess.Reader.ToString().ToLower());
+
+            var entries = _ownerList.Concat(_writerList).Concat(_readerList).ToList();
+
+            _mock.Setup(x => x.GetCalendarListItemsExecuteAsyncItems()).ReturnsAsync(entries);
         }
 
         [TestMethod]
@@ -58,7 +41,6 @@ namespace SimpleGoogleCalendarv3.Tests
         {
             var calendar = new SimpleGoogleCalendar(_mock.Object);
             var ids = await calendar.GetCalendarIdsAsync(CalendarAccess.Owner);
-            Console.Out.WriteLine(ids.Count);
             Assert.AreEqual(_ownerList.Count, ids.Count);
             foreach (var calendarListEntry in _ownerList)
             {
@@ -72,7 +54,6 @@ namespace SimpleGoogleCalendarv3.Tests
         {
             var calendar = new SimpleGoogleCalendar(_mock.Object);
             var ids = await calendar.GetCalendarIdsAsync(CalendarAccess.Reader);
-            Console.Out.WriteLine(ids.Count);
             Assert.AreEqual(_readerList.Count, ids.Count);
             foreach (var calendarListEntry in _readerList)
             {
@@ -86,7 +67,6 @@ namespace SimpleGoogleCalendarv3.Tests
         {
             var calendar = new SimpleGoogleCalendar(_mock.Object);
             var ids = await calendar.GetCalendarIdsAsync(CalendarAccess.Writer);
-            Console.Out.WriteLine(ids.Count);
             Assert.AreEqual(_writerList.Count, ids.Count);
             foreach (var calendarListEntry in _writerList)
             {

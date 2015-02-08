@@ -7,7 +7,7 @@ namespace SimpleGoogleCalendarv3
 {
     public interface ISimpleCalendar
     {
-        Task<IDictionary<string, string>> GetCalendarIdsAsync(string accessLevel);
+        Task<IDictionary<string, string>> GetCalendarIdsAsync(CalendarAccess accessLevel);
 
         Task<IEnumerable<Event>> GetEventsAsync(string calendarId, DateTime startDate, DateTime endDate,
             bool singleEvents);
@@ -31,12 +31,12 @@ namespace SimpleGoogleCalendarv3
         {
             _service = csFacade;
         }
-
-        public async Task<IDictionary<string, string>> GetCalendarIdsAsync(string accessLevel)
+        
+        public async Task<IDictionary<string, string>> GetCalendarIdsAsync(CalendarAccess accessLevel)
         {
             var calendarIds = new Dictionary<string, string>();
             var req = await _service.GetCalendarListItemsExecuteAsyncItems();
-            foreach (var calendarListEntry in req.Where(x => x.AccessRole.Equals(accessLevel)))
+            foreach (var calendarListEntry in req.Where(x => x.AccessRole.Equals(accessLevel.ToString().ToLower())))
             {
                 var calendarId = calendarListEntry.Id;
                 var calendarSummary = calendarListEntry.Summary;
