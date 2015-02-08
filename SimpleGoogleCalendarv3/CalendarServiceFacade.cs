@@ -1,13 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Google.Apis.Calendar.v3;
 using Google.Apis.Calendar.v3.Data;
 
 namespace SimpleGoogleCalendarv3
 {
+    public interface ICalendarServiceFacade
+    {
+        Task<IEnumerable<CalendarListEntry>> GetCalendarListItemsExecuteAsyncItems();
+
+        EventsResource.ListRequest GetEventsList(string calendarId);
+        Task AddEvent(string calendarId, Event gEvent);
+
+        Task DeleteEvent(string calendarId, string eventId);
+
+        Task<Calendar> GetCalendar(string calendarId);
+
+        Task DeleteCalendar(string calendarId);
+    }
+
     public class CalendarServiceFacade : ICalendarServiceFacade
     {
         private readonly CalendarService _service;
@@ -17,7 +28,7 @@ namespace SimpleGoogleCalendarv3
             _service = service;
         }
 
-        public async Task<IList<CalendarListEntry>> GetCalendarListItemsExecuteAsyncItems()
+        public async Task<IEnumerable<CalendarListEntry>> GetCalendarListItemsExecuteAsyncItems()
         {
             var request = await _service.CalendarList.List().ExecuteAsync();
             return request.Items;

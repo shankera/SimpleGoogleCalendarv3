@@ -7,6 +7,11 @@ using Google.Apis.Util.Store;
 
 namespace SimpleGoogleCalendarv3
 {
+    public interface ISimpleApi
+    {
+        Task<BaseClientService> CreateServiceAsync();
+    }
+
     public class SimpleCalendarApi : ISimpleApi
     {
         private readonly string _clientId;

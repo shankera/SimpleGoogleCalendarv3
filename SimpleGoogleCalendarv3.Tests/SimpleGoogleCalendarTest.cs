@@ -1,9 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Google.Apis.Calendar.v3;
 using Google.Apis.Calendar.v3.Data;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
+using Ploeh.AutoFixture;
 
 namespace SimpleGoogleCalendarv3.Tests
 {
@@ -21,38 +24,33 @@ namespace SimpleGoogleCalendarv3.Tests
             _ownerList = new List<CalendarListEntry>();
             _writerList = new List<CalendarListEntry>();
             _readerList = new List<CalendarListEntry>();
-            var list = new List<CalendarListEntry>();
-            for (var x = 0; x < 10; x++)
+
+            var fixture = new Fixture();
+            var entries = fixture.CreateMany<CalendarListEntry>(60);
+            var index = 0;
+            var calendarListEntries = entries as IList<CalendarListEntry> ?? entries.ToList();
+            foreach (var calendarListEntry in calendarListEntries)
             {
-                var cle = new CalendarListEntry
+                calendarListEntry.Id = fixture.Create<string>();
+                calendarListEntry.Summary = fixture.Create<string>();
+                if (index%4 == 0)
                 {
-                    AccessRole = "owner",
-                    Summary = "CalendarNameOwner" + x,
-                    Id = "CalendarId" + x
-                };
-
-                list.Add(cle);
-                _ownerList.Add(cle);
-                cle = new CalendarListEntry
+                    calendarListEntry.AccessRole = CalendarAccess.Owner;
+                    _ownerList.Add(calendarListEntry);
+                }
+                else if (index%3 == 0)
                 {
-                    AccessRole = "writer",
-                    Summary = "CalendarNameWriter" + x,
-                    Id = "CalendarId" + x
-                };
-
-                list.Add(cle);
-                _writerList.Add(cle);
-                cle = new CalendarListEntry
+                    calendarListEntry.AccessRole = CalendarAccess.Reader;
+                    _readerList.Add(calendarListEntry);
+                }
+                else
                 {
-                    AccessRole = "reader",
-                    Summary = "CalendarNameReader" + x,
-                    Id = "CalendarId" + x
-                };
-
-                list.Add(cle);
-                _readerList.Add(cle);
+                    calendarListEntry.AccessRole = CalendarAccess.Writer;
+                    _writerList.Add(calendarListEntry);
+                }
+                index++;
             }
-            _mock.Setup(x => x.GetCalendarListItemsExecuteAsyncItems()).ReturnsAsync(list);
+            _mock.Setup(x => x.GetCalendarListItemsExecuteAsyncItems()).ReturnsAsync(calendarListEntries);
         }
 
         [TestMethod]
@@ -60,7 +58,8 @@ namespace SimpleGoogleCalendarv3.Tests
         {
             var calendar = new SimpleGoogleCalendar(_mock.Object);
             var ids = await calendar.GetCalendarIdsAsync(CalendarAccess.Owner);
-            Assert.AreEqual(10, ids.Count);
+            Console.Out.WriteLine(ids.Count);
+            Assert.AreEqual(_ownerList.Count, ids.Count);
             foreach (var calendarListEntry in _ownerList)
             {
                 Assert.IsTrue(ids.ContainsKey(calendarListEntry.Id));
@@ -73,7 +72,8 @@ namespace SimpleGoogleCalendarv3.Tests
         {
             var calendar = new SimpleGoogleCalendar(_mock.Object);
             var ids = await calendar.GetCalendarIdsAsync(CalendarAccess.Reader);
-            Assert.AreEqual(10, ids.Count);
+            Console.Out.WriteLine(ids.Count);
+            Assert.AreEqual(_readerList.Count, ids.Count);
             foreach (var calendarListEntry in _readerList)
             {
                 Assert.IsTrue(ids.ContainsKey(calendarListEntry.Id));
@@ -86,7 +86,8 @@ namespace SimpleGoogleCalendarv3.Tests
         {
             var calendar = new SimpleGoogleCalendar(_mock.Object);
             var ids = await calendar.GetCalendarIdsAsync(CalendarAccess.Writer);
-            Assert.AreEqual(10, ids.Count);
+            Console.Out.WriteLine(ids.Count);
+            Assert.AreEqual(_writerList.Count, ids.Count);
             foreach (var calendarListEntry in _writerList)
             {
                 Assert.IsTrue(ids.ContainsKey(calendarListEntry.Id));
