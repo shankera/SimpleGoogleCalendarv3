@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Google.Apis.Calendar.v3;
 using Google.Apis.Calendar.v3.Data;
@@ -9,7 +10,9 @@ namespace SimpleGoogleCalendarv3
     {
         Task<IEnumerable<CalendarListEntry>> GetCalendarListItemsExecuteAsyncItems();
 
-        EventsResource.ListRequest GetEventsList(string calendarId);
+        Task<IEnumerable<Event>> GetEventsList(string calendarId, DateTime startTime, DateTime endTime,
+            bool singleEvent);
+
         Task AddEvent(string calendarId, Event gEvent);
 
         Task DeleteEvent(string calendarId, string eventId);
@@ -34,9 +37,15 @@ namespace SimpleGoogleCalendarv3
             return request.Items;
         }
 
-        public EventsResource.ListRequest GetEventsList(string calendarId)
+        public async Task<IEnumerable<Event>> GetEventsList(string calendarId, DateTime startTime, DateTime endTime, bool singleEvents)
         {
-            return _service.Events.List(calendarId);
+            var listRequest = _service.Events.List(calendarId);
+            listRequest.TimeMin = startTime;
+            listRequest.TimeMax = endTime;
+            listRequest.SingleEvents = singleEvents;
+            var request = await listRequest.ExecuteAsync();
+
+            return request.Items;
         }
 
         public async Task AddEvent(string calendarId, Event gEvent)

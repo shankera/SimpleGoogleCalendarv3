@@ -51,13 +51,12 @@ namespace SimpleGoogleCalendarv3
 
         public async Task<IEnumerable<Event>> GetEventsAsync(string calendarId, DateTime startDate, DateTime endDate, bool singleEvents)
         {
-            var listRequest = _service.GetEventsList(calendarId);
-            listRequest.TimeMin = startDate;
-            listRequest.TimeMax = endDate;
-            listRequest.SingleEvents = singleEvents;
-            var request = await listRequest.ExecuteAsync();
+            if (calendarId == null) throw new ArgumentNullException("calendarId", "calendarId can not be null");
+            if (startDate == null) throw new ArgumentNullException("startDate", "startDate can not be null");
+            if (endDate == null) throw new ArgumentNullException("endDate", "endDate can not be null");
+            if (endDate < startDate) throw new ArgumentException("endDate must be larger than startDate");
 
-            return request.Items.ToList();
+            return await _service.GetEventsList(calendarId, startDate, endDate, singleEvents);
         }
 
         public async Task AddEventAsync(string calendarId, Event gEvent)
