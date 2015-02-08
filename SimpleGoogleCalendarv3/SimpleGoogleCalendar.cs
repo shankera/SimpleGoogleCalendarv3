@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-﻿using Google.Apis.Calendar.v3;
 using Google.Apis.Calendar.v3.Data;
 namespace SimpleGoogleCalendarv3
 {
@@ -10,18 +9,18 @@ namespace SimpleGoogleCalendarv3
     {
         public const string DefaultCalendarId = "primary";
 
-        private static CalendarService _service;
+        private static ICalendarServiceFacade _service;
 
-        public SimpleGoogleCalendar(CalendarService service)
+        public SimpleGoogleCalendar(ICalendarServiceFacade csFacade)
         {
-            _service = service;
+            _service = csFacade;
         }
 
         public async Task<IDictionary<string, string>> GetCalendarIdsAsync(string accessLevel)
         {
             var calendarIds = new Dictionary<string, string>();
-            var req = await _service.CalendarList.List().ExecuteAsync();
-            foreach (var calendarListEntry in req.Items.Where(x => x.AccessRole.Equals(accessLevel)))
+            var req = await _service.GetCalendarListItemsExecuteAsyncItems();
+            foreach (var calendarListEntry in req.Where(x => x.AccessRole.Equals(accessLevel)))
             {
                 var calendarId = calendarListEntry.Id;
                 var calendarSummary = calendarListEntry.Summary;
@@ -36,7 +35,7 @@ namespace SimpleGoogleCalendarv3
 
         public async Task<IEnumerable<Event>> GetEventsAsync(string calendarId, DateTime startDate, DateTime endDate, bool singleEvents)
         {
-            var listRequest = _service.Events.List(calendarId);
+            var listRequest = _service.GetEventsList(calendarId);
             listRequest.TimeMin = startDate;
             listRequest.TimeMax = endDate;
             listRequest.SingleEvents = singleEvents;
@@ -47,22 +46,22 @@ namespace SimpleGoogleCalendarv3
 
         public async Task AddEventAsync(string calendarId, Event gEvent)
         {
-            await _service.Events.Insert(gEvent, calendarId).ExecuteAsync();
+            await _service.AddEvent(calendarId, gEvent);
         }
 
         public async Task DeleteEventAsync(string calendarId, string eventId)
         {
-            await _service.Events.Delete(calendarId, eventId).ExecuteAsync();
+            await _service.DeleteEvent(calendarId, eventId);
         }
 
         public async Task<Calendar> GetCalendarAsync(string calendarId)
         {
-            return await _service.Calendars.Get(calendarId).ExecuteAsync();
+            return await _service.GetCalendar(calendarId);
         }
 
         public async Task DeleteCalendarAsync(string calendarId)
         {
-            await _service.Calendars.Delete(calendarId).ExecuteAsync();
+            await _service.DeleteCalendar(calendarId);
         }
     }
 

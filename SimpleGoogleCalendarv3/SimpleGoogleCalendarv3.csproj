@@ -98,6 +98,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CalendarAccess.cs" />
+    <Compile Include="CalendarServiceFacade.cs" />
+    <Compile Include="ICalendarServiceFacade.cs" />
+    <Compile Include="ISimpleApi.cs" />
+    <Compile Include="ISimpleCalendar.cs" />
+    <Compile Include="SimpleCalendarApi.cs" />
     <Compile Include="SimpleEventBuilder.cs" />
     <Compile Include="SimpleGoogleCalendar.cs" />
     <Compile Include="PrivateConsts.cs" />
